@@ -1,4 +1,6 @@
 """Regression tree skeleton."""
+import numpy as np
+
 from .base import BaseDecisionTree
 
 
@@ -13,6 +15,9 @@ class DecisionTreeRegressor(BaseDecisionTree):
     Each hook below documents what it receives and must return; see
     ``BaseDecisionTree`` for the full contract.
     """
+
+    # Criterios que acepta fit
+    _criterios_validos = ("mse", "mae")
 
     def __init__(self, max_depth=None, min_samples_split=2, criterion="mse"):
         super().__init__(max_depth, min_samples_split, criterion)
@@ -29,7 +34,7 @@ class DecisionTreeRegressor(BaseDecisionTree):
             Node: Leaf (when a stopping rule triggers) or internal node with
             two subtrees built from the best split.
         """
-        raise NotImplementedError("TODO")
+        return super()._build_tree(X, y, depth)
 
     def _impurity(self, y):
         """Impurity of ``y`` per ``self.criterion``: mean squared error or mean absolute error of y around its center (mean for 'mse', median for 'mae').
@@ -40,7 +45,12 @@ class DecisionTreeRegressor(BaseDecisionTree):
         Returns:
             float: Impurity (0 if pure).
         """
-        raise NotImplementedError("TODO: mse / mae")
+        y = np.asarray(y, dtype=float)
+        if len(y) == 0:
+            return 0.0
+        if self.criterion == "mae":
+            return float(np.mean(np.abs(y - np.median(y))))
+        return float(np.mean((y - np.mean(y)) ** 2))
 
     def _best_split(self, X, y):
         """Search all features/thresholds for the largest impurity decrease.
@@ -53,7 +63,7 @@ class DecisionTreeRegressor(BaseDecisionTree):
             tuple (int, float) or None: ``(feature_index, threshold)``, or
             None if no split reduces impurity.
         """
-        raise NotImplementedError("TODO")
+        return super()._best_split(X, y)
 
     def _leaf_value(self, y):
         """Return the mean of y.
@@ -64,7 +74,7 @@ class DecisionTreeRegressor(BaseDecisionTree):
         Returns:
             The prediction for the leaf.
         """
-        raise NotImplementedError("TODO: mean")
+        return float(np.mean(y))
 
     def _score(self, y_true, y_pred):
         """Metric for ``eval``: R^2 = 1 - SS_res / SS_tot.
@@ -76,4 +86,10 @@ class DecisionTreeRegressor(BaseDecisionTree):
         Returns:
             float: Score (higher is better).
         """
-        raise NotImplementedError("TODO: R^2")
+        y_true = np.asarray(y_true, dtype=float)
+        y_pred = np.asarray(y_pred, dtype=float)
+        ss_res = np.sum((y_true - y_pred) ** 2)
+        ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+        if ss_tot == 0:
+            return 1.0 if ss_res == 0 else 0.0
+        return float(1 - ss_res / ss_tot)
